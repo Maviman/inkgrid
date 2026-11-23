@@ -1,6 +1,10 @@
 # Inkgrid
 
-Private image/video to ASCII converter. Everything renders in the browser; the only server code is a passphrase gate.
+Private image/video to ASCII converter. Everything renders in the browser.
+
+**Run it on Windows:** double-click `start.cmd` (needs Node.js 18+). First run installs packages, then it opens http://localhost:4173. Close the window to stop it.
+
+The passphrase gate in `server/` + `functions/` is only used if you ever host it on Cloudflare Pages; locally there is no gate.
 
 ```bash
 npm install

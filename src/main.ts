@@ -571,6 +571,8 @@ window.addEventListener('keydown', (e) => {
 });
 
 // ---------- boot
+// The Lock button only means something behind the hosted gate.
+if (['localhost', '127.0.0.1', '[::1]'].includes(location.hostname)) document.querySelector('.logout-form')?.remove();
 buildSidebar();
 buildPresets();
 refreshControls();
