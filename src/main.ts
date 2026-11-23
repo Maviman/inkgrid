@@ -572,7 +572,11 @@ window.addEventListener('keydown', (e) => {
 
 // ---------- boot
 // The Lock button only means something behind the hosted gate.
-if (['localhost', '127.0.0.1', '[::1]'].includes(location.hostname)) document.querySelector('.logout-form')?.remove();
+const lockForm = document.querySelector<HTMLElement>('.logout-form');
+if (lockForm) {
+  lockForm.hidden = true;
+  fetch('/__gate', { cache: 'no-store' }).then((r) => (lockForm.hidden = r.status !== 204)).catch(() => {});
+}
 buildSidebar();
 buildPresets();
 refreshControls();

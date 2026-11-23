@@ -67,8 +67,14 @@ function redirect(to: string, cookie?: string): Response {
   return new Response(null, { status: 303, headers: h });
 }
 
-export async function gate(req: Request, env: GateEnv, next: () => Promise<Response>): Promise<Response> {
+export interface GateOptions {
+  /** Add the Secure cookie flag. Off only for plain-http self-hosting on a LAN. */
+  secureCookie?: boolean;
+}
+
+export async function gate(req: Request, env: GateEnv, next: () => Promise<Response>, opts: GateOptions = {}): Promise<Response> {
   const url = new URL(req.url);
+  const secure = opts.secureCookie === false ? '' : ' Secure;';
   if (!env.GATE_PASSPHRASE || !env.GATE_SECRET || env.GATE_SECRET.length < 32) {
     return new Response('Gate is not configured: set GATE_PASSPHRASE and GATE_SECRET (32+ chars).', { status: 503 });
   }
@@ -78,7 +84,7 @@ export async function gate(req: Request, env: GateEnv, next: () => Promise<Respo
       const pass = String(form?.get('pass') ?? '');
       if (pass && (await safeEqual(pass, env.GATE_PASSPHRASE))) {
         const token = await makeToken(env.GATE_SECRET);
-        return redirect('/', `${COOKIE}=${token}; Path=/; Max-Age=${MAX_AGE}; HttpOnly; Secure; SameSite=Strict`);
+        return redirect('/', `${COOKIE}=${token}; Path=/; Max-Age=${MAX_AGE}; HttpOnly;${secure} SameSite=Strict`);
       }
       await new Promise((r) => setTimeout(r, 600)); // slow down guessing
       return page(true);
@@ -86,11 +92,13 @@ export async function gate(req: Request, env: GateEnv, next: () => Promise<Respo
     return page();
   }
   if (url.pathname === '/logout' && req.method === 'POST') {
-    return redirect('/login', `${COOKIE}=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Strict`);
+    return redirect('/login', `${COOKIE}=; Path=/; Max-Age=0; HttpOnly;${secure} SameSite=Strict`);
   }
   if (!(await validToken(env.GATE_SECRET, readCookie(req, COOKIE)))) {
     return redirect('/login');
   }
+  // lets the page know a gate is in front of it (shows the Lock button)
+  if (url.pathname === '/__gate') return new Response(null, { status: 204, headers: { 'cache-control': 'no-store' } });
   const res = await next();
   const out = new Response(res.body, res);
   for (const [k, v] of Object.entries(SECURITY_HEADERS)) out.headers.set(k, v);

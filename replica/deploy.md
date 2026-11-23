@@ -1,6 +1,6 @@
 # Deploy checklist: Inkgrid
 
-Date: 2026-11-23  Commit: b4d1a48  Go from user: not yet
+Date: 2026-11-23  Commit: b4d1a48  Go from user: yes (self-host on Windows)
 
 ## Preflight
 
@@ -13,18 +13,15 @@ Date: 2026-11-23  Commit: b4d1a48  Go from user: not yet
 - [x] favicon, title, logo are original
 - N/A store listing, privacy policy/terms, account deletion, Stripe, OAuth, email domain (one user, no data leaves the browser)
 
-## Production (Cloudflare Pages, recommended)
+## Production: self-hosted on Jordan's Windows PC (chosen 2026-11-23)
 
-1. Jordan: create a Cloudflare account (free) if needed, then either
-   - connect a GitHub repo holding this code in Pages (build: `npm run build`, output: `dist`), or
-   - run `npx wrangler pages deploy dist --project-name inkgrid` locally after `npx wrangler login`.
-2. Pages > Settings > Variables and secrets (Production, encrypted):
-   - GATE_PASSPHRASE: your passphrase
-   - GATE_SECRET: output of `openssl rand -base64 48`
-3. Optional extra lock: Cloudflare Zero Trust > Access > self-hosted app on the Pages domain, policy "emails = yours" (free under 50 users). Works in front of the passphrase.
-4. Optional custom domain: Pages > Custom domains (DNS managed by Cloudflare, HTTPS automatic).
+- [x] `server/serve.ts` -> `dist-server/serve.mjs` (bundled, zero runtime deps): serves dist/, runs the same gate as the edge version
+- [x] Binds 127.0.0.1 by default; refuses to bind a LAN address without a passphrase
+- [x] Secure cookie flag on loopback/HTTPS, dropped on plain-http LAN (browsers would discard it otherwise)
+- [x] Path traversal blocked, security headers, noindex
+- [x] `start.cmd`: checks Node, builds if needed, asks for a passphrase on first run, opens the browser
+- [x] Tested: gate off on loopback, refuses LAN without pass, login/wrong pass/lock on 127.0.0.1 and on a LAN IP
+- [ ] Jordan: run start.cmd once and set a passphrase
+- N/A domain, DNS, email, Stripe, OAuth, monitoring
 
-## Watch
-
-- N/A error tracking/analytics (deliberately none; nothing phones home)
-- [ ] core flow done on the live site, desktop and phone (after deploy)
+Cloudflare Pages remains possible later (functions/_middleware.ts), not used.

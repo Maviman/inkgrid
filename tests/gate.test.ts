@@ -57,3 +57,15 @@ describe('gate', () => {
     expect(r.headers.get('set-cookie')).toMatch(/Max-Age=0/);
   });
 });
+
+describe('gate on plain-http LAN', () => {
+  it('drops the Secure flag when asked, and reports itself', async () => {
+    const f = new FormData();
+    f.set('pass', env.GATE_PASSPHRASE);
+    const r = await gate(new Request('http://192.168.1.5/login', { method: 'POST', body: f }), env, ok, { secureCookie: false });
+    const cookie = r.headers.get('set-cookie')!;
+    expect(cookie).not.toMatch(/Secure/);
+    const r2 = await gate(new Request('http://192.168.1.5/__gate', { headers: { cookie: cookie.split(';')[0] } }), env, ok);
+    expect(r2.status).toBe(204);
+  });
+});

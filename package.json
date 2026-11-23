@@ -4,11 +4,13 @@
   "description": "",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "tsc && vite build && npm run build:server",
     "preview": "vite preview",
     "test": "vitest run",
     "test:e2e": "node tests/e2e.mjs",
-    "local": "vite build && vite preview --port 4173 --open"
+    "build:server": "esbuild server/serve.ts --bundle --platform=node --format=esm --target=node18 --outfile=dist-server/serve.mjs",
+    "start": "node dist-server/serve.mjs",
+    "passphrase": "node dist-server/serve.mjs --set-passphrase"
   },
   "keywords": [],
   "author": "",
@@ -17,6 +19,7 @@
     "@axe-core/playwright": "^4.14.0",
     "@fontsource/jetbrains-mono": "^5.3.0",
     "@playwright/test": "^1.63.0",
+    "@types/node": "^22.20.5",
     "typescript": "^5.9.3",
     "vite": "^6.4.6",
     "vitest": "^3.2.7",
