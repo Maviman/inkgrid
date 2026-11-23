@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Inkgrid</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <header class="top">
+      <a class="brand" href="/" aria-label="Inkgrid home">
+        <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><rect x="1" y="1" width="20" height="20" rx="4" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M6 7h2M11 7h5M6 11h5M14 11h2M6 15h2M10 15h6" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <span>Inkgrid</span>
+      </a>
+      <div class="top-actions">
+        <button class="btn secondary sm" id="btn-open" type="button">Open file</button>
+        <button class="btn ghost sm" id="btn-sample" type="button">Demo scene</button>
+        <form method="post" action="/logout" class="logout-form"><button class="btn ghost sm" type="submit" id="btn-logout">Lock</button></form>
+        <input id="file" type="file" accept="image/*,video/*" hidden />
+      </div>
+    </header>
+
+    <div class="shell">
+      <main class="stage">
+        <section class="preview" id="preview" aria-label="Preview">
+          <div class="info mono" id="info">Loading…</div>
+          <div class="canvas-wrap" id="canvas-wrap">
+            <canvas id="out" aria-label="ASCII render of the current picture"></canvas>
+          </div>
+          <div class="bar" id="bar">
+            <div class="video-controls" id="video-controls" hidden>
+              <button class="btn icon ghost" id="btn-play" type="button" aria-label="Pause">
+                <svg class="i-pause" viewBox="0 0 24 24"><path d="M7 5h3v14H7zM14 5h3v14h-3z"/></svg>
+                <svg class="i-play" viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z"/></svg>
+              </button>
+              <input id="seek" type="range" min="0" max="1000" value="0" aria-label="Position in clip" />
+              <span class="mono time" id="time">0:00</span>
+            </div>
+            <button class="btn secondary sm" id="btn-compare" type="button" aria-pressed="false" title="Drag across the picture to see the source">Split view</button>
+            <button class="btn icon ghost" id="btn-full" type="button" aria-label="Full screen">
+              <svg viewBox="0 0 24 24"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+            </button>
+          </div>
+        </section>
+        <section class="presets" aria-label="Presets">
+          <div class="presets-head">
+            <span class="eyebrow">Looks</span>
+            <span class="muted xs">Previewed on your picture. Click one to start from it.</span>
+            <span class="spacer"></span>
+            <button class="btn icon ghost" id="pre-left" type="button" aria-label="Scroll looks left"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2"/></svg></button>
+            <button class="btn icon ghost" id="pre-right" type="button" aria-label="Scroll looks right"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2"/></svg></button>
+          </div>
+          <div class="preset-row" id="preset-row" role="group" aria-label="Looks"></div>
+        </section>
+      </main>
+
+      <aside class="side" aria-label="Controls">
+        <div class="side-scroll" id="controls"></div>
+        <div class="side-foot">
+          <button class="btn secondary" id="btn-text" type="button">Copy text</button>
+          <button class="btn secondary" id="btn-video" type="button">Save video</button>
+          <button class="btn primary" id="btn-image" type="button">Save image</button>
+        </div>
+      </aside>
+    </div>
+
+    <div class="drop" id="drop" hidden><div>Release to load this file</div></div>
+
+    <dialog class="modal" id="export">
+      <form method="dialog" class="modal-body">
+        <h2 id="exp-title">Save image</h2>
+        <p class="muted sm" id="exp-note"></p>
+        <div class="field">
+          <span class="label">Size</span>
+          <div class="seg" id="exp-size" role="radiogroup" aria-label="Size">
+            <button type="button" data-v="1280" aria-pressed="false">720p</button>
+            <button type="button" data-v="1920" aria-pressed="true">1080p</button>
+            <button type="button" data-v="3840" aria-pressed="false">4K</button>
+          </div>
+        </div>
+        <div class="progress" id="exp-progress" hidden><div id="exp-bar"></div></div>
+        <div class="modal-actions">
+          <button class="btn ghost" value="cancel" id="exp-cancel">Cancel</button>
+          <button class="btn primary" type="button" id="exp-go">Save</button>
+        </div>
+      </form>
+    </dialog>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
