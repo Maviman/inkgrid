@@ -53,7 +53,8 @@ Copy-Item "$nodeDir\LICENSE" "$stage\server\NODE-LICENSE.txt"
 Copy-Item "$root\dist-server\serve.mjs" "$stage\server\serve.mjs"
 Copy-Item "$pkgDir\start-network.cmd" "$stage\server\start-network.cmd"
 Write-Host "Bundled $zipName"
-"node=$($zipName -replace '-win-x64\.zip$','')" | Out-File -Encoding ascii (Join-Path $root "out-node-version.txt")
+New-Item -ItemType Directory -Force -Path (Join-Path $root "out") | Out-Null
+"node=$($zipName -replace '-win-x64\.zip$','')" | Out-File -Encoding ascii (Join-Path $root "out\node-version.txt")
 
 # 4. Installer
 $iscc = (Get-Command iscc.exe -ErrorAction SilentlyContinue).Source

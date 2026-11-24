@@ -10,5 +10,4 @@ dist-server
 packaging/stage
 packaging/.cache
 out
-out-node-version.txt
 smoke-logs
