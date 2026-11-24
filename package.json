@@ -9,8 +9,7 @@
     "test": "vitest run",
     "test:e2e": "node tests/e2e.mjs",
     "build:server": "esbuild server/serve.ts --bundle --platform=node --format=esm --target=node18 --outfile=dist-server/serve.mjs",
-    "start": "node dist-server/serve.mjs",
-    "passphrase": "node dist-server/serve.mjs --set-passphrase"
+    "start": "node dist-server/serve.mjs"
   },
   "keywords": [],
   "author": "",
@@ -22,8 +21,7 @@
     "@types/node": "^22.20.5",
     "typescript": "^5.9.3",
     "vite": "^6.4.6",
-    "vitest": "^3.2.7",
-    "wrangler": "^3.114.17"
+    "vitest": "^3.2.7"
   },
   "private": true,
   "type": "module"

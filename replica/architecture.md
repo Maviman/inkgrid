@@ -12,8 +12,8 @@ Source: replica/recon.md, replica/features.csv. One user, no data leaves the bro
 | state | one `Settings` object, JSON-serialisable, saved to localStorage | presets are just partial Settings |
 | export | canvas.toBlob (PNG), MediaRecorder on canvas.captureStream (WebM), text/clipboard | all native browser APIs |
 | database | none | nothing to store server-side |
-| auth | Cloudflare Pages Function middleware: passphrase -> HMAC-signed cookie (or Cloudflare Access in front, zero code) | single user; see replica-backend |
-| hosting | Cloudflare Pages (static + one function), free tier | static files + edge middleware in one place; Jordan's choice at deploy |
+| auth | none | local, single user; Jordan asked for no login |
+| hosting | Jordan's Windows PC, tiny Node static server | Jordan's choice at deploy |
 | tests | Vitest (pure functions) + Playwright (e2e) | Playwright already in the toolchain |
 
 ## Schema
@@ -24,10 +24,7 @@ No SQL. The only "schema" is the client `Settings` type in `src/settings.ts`, pe
 
 | method path | what | who | in | out | flow |
 | --- | --- | --- | --- | --- | --- |
-| GET /* | static app | gated by middleware | cookie | html/js | all |
-| GET /login | passphrase form | anyone | | html | gate |
-| POST /login | check passphrase, set cookie | anyone, rate-limited by Cloudflare | form `pass` | 303 + Set-Cookie | gate |
-| POST /logout | clear cookie | owner | | 303 | gate |
+| GET /* | static app files | anyone who can reach the PC (localhost by default) | | html/js/css/fonts | all |
 
 No webhooks, no jobs.
 
@@ -39,7 +36,6 @@ No webhooks, no jobs.
 - **Memory**: 4K + bloom = several full-size canvases; reuse buffers.
 - **File limits**: reject non-image/video; downscale sources > 4096 px on load.
 - **Fonts**: bundle an OFL mono font (JetBrains Mono, OFL) locally, never the original's.
-- **Auth**: constant-time compare, HttpOnly+Secure+SameSite=Strict cookie, 30-day expiry, secret in env only.
 
 ## Build order
 
@@ -47,4 +43,4 @@ No webhooks, no jobs.
 2. **Must-haves**: styles + custom ramp, cols, tone, auto levels/invert, colour modes, ink, backgrounds incl. transparent, preset strip with live thumbs, drag-drop, sample, in-browser only.
 3. **Should-haves**: video in/out, compare split, dither, letter spacing, tiles, palettes, boost, overlay/blend, contours, CRT effects, double-click reset, text copy.
 4. **Could-haves**: particle, film, drift, bricks, animate flicker/twinkle, immersive, collapsible sections.
-5. **Gate + deploy**.
+5. **Local server + Windows start script**.

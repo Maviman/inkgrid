@@ -6,10 +6,6 @@ if not exist dist-server\serve.mjs (
   call npm install || goto :fail
   call npm run build || goto :fail
 )
-if not exist .env (
-  echo No passphrase set yet. Pick one now.
-  node dist-server\serve.mjs --set-passphrase || goto :fail
-)
 start "" http://localhost:4173
 node dist-server\serve.mjs
 pause

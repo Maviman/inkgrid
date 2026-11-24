@@ -38,6 +38,6 @@ Download image (PNG) at 720p/1080p/4K,export,must,yes,yes,
 Download video (WebM) at 720p/1080p/4K,export,should,yes,yes,
 Copy ASCII as plain text,export,should,no,yes,clone extra: copy to clipboard or .txt fallback
 Processing stays in the browser,privacy,must,yes,yes,
-Account sign-in (email or Google) gating export,account,must,yes,skip,replaced by single-user access gate in replica-backend
+Account sign-in (email or Google) gating export,account,must,yes,skip,not wanted: app opens with no login
 Admin console,account,could,yes,skip,multi-user only; not needed for one user
 Public ASCII library page,library,could,yes,skip,content owned by the original; out of scope
