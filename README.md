@@ -18,7 +18,7 @@ Private image/video to ASCII converter. Everything renders on your PC. No login,
 
 ### Building the installer
 
-CI (`.github/workflows/windows-installer.yml`) builds it on `windows-latest`, silently installs it, launches the app and checks it renders, tests an in-place upgrade and both uninstall modes, and only then publishes a release on `v*` tags. The version comes from `package.json`; a tag must match it. To cut a release: bump `version` in `package.json`, merge, then `git tag v1.2.3 && git push --tags`.
+CI (`.github/workflows/windows-installer.yml`) builds it on `windows-latest`, silently installs it, launches the app and checks it renders, tests an in-place upgrade and both uninstall modes, and only then publishes a release on `v*` tags. The version comes from `package.json`; a tag must match it. To cut a release: bump `version` in `package.json` and merge, then either run the workflow from the Actions tab on `main` with **release** ticked (it creates the `v<version>` tag itself), or push a `v<version>` tag.
 
 Locally on Windows: `powershell -ExecutionPolicy Bypass -File packaging\build.ps1` writes `out\Inkgrid-Setup.exe` (needs Node.js and Inno Setup 6, which the script installs with Chocolatey if missing).
 

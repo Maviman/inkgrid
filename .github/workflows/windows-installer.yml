@@ -6,6 +6,11 @@ on:
     tags: ['v*']
   pull_request:
   workflow_dispatch:
+    inputs:
+      release:
+        description: 'Publish a release for the package.json version (tag v<version> is created from this commit; main only)'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -24,6 +29,8 @@ jobs:
 
   installer:
     runs-on: windows-latest
+    outputs:
+      version: ${{ steps.ver.outputs.version }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -32,11 +39,16 @@ jobs:
       - name: Work out the version
         id: ver
         shell: pwsh
+        env:
+          RELEASE: ${{ github.event_name == 'workflow_dispatch' && inputs.release }}
         run: |
           $pkg = (Get-Content package.json -Raw | ConvertFrom-Json).version
           if ($env:GITHUB_REF -like 'refs/tags/v*') {
             $v = $env:GITHUB_REF_NAME.Substring(1)
             if ($v -ne $pkg) { throw "Tag v$v does not match package.json version $pkg. Bump package.json first." }
+          } elseif ($env:RELEASE -eq 'true') {
+            if ($env:GITHUB_REF -ne 'refs/heads/main') { throw "Releases are only cut from main" }
+            $v = $pkg
           } else {
             $v = "$pkg-dev.$env:GITHUB_RUN_NUMBER"
           }
@@ -85,7 +97,8 @@ jobs:
           if-no-files-found: ignore
 
   release:
-    if: startsWith(github.ref, 'refs/tags/v')
+    # Either a pushed v* tag, or a manual run on main with "release" ticked (creates the tag itself)
+    if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.release && github.ref == 'refs/heads/main')
     needs: [test, installer]
     runs-on: ubuntu-latest
     permissions:
@@ -96,8 +109,11 @@ jobs:
       - name: Publish release
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ github.ref_name }}
+          TAG: v${{ needs.installer.outputs.version }}
         run: |
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release $TAG already exists. Bump the version in package.json first."; exit 1
+          fi
           NODE=$(cut -d= -f2 dist/out-node-version.txt)
           cat > notes.md <<EOF
           ## Install
@@ -115,4 +131,4 @@ jobs:
           SHA-256: \`$(cut -d' ' -f1 dist/SHA256SUMS.txt)\`
           EOF
           gh release create "$TAG" dist/Inkgrid-Setup.exe dist/SHA256SUMS.txt \
-            --repo "$GITHUB_REPOSITORY" --title "Inkgrid ${TAG#v}" --notes-file notes.md
+            --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "Inkgrid ${TAG#v}" --notes-file notes.md
