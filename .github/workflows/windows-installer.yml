@@ -1,0 +1,134 @@
+name: Windows installer
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      release:
+        description: 'Publish a release for the package.json version (tag v<version> is created from this commit; main only)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci --no-audit --no-fund
+      - run: npm test
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test --trace off --reporter=line
+
+  installer:
+    runs-on: windows-latest
+    outputs:
+      version: ${{ steps.ver.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+
+      - name: Work out the version
+        id: ver
+        shell: pwsh
+        env:
+          RELEASE: ${{ github.event_name == 'workflow_dispatch' && inputs.release }}
+        run: |
+          $pkg = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          if ($env:GITHUB_REF -like 'refs/tags/v*') {
+            $v = $env:GITHUB_REF_NAME.Substring(1)
+            if ($v -ne $pkg) { throw "Tag v$v does not match package.json version $pkg. Bump package.json first." }
+          } elseif ($env:RELEASE -eq 'true') {
+            if ($env:GITHUB_REF -ne 'refs/heads/main') { throw "Releases are only cut from main" }
+            $v = $pkg
+          } else {
+            $v = "$pkg-dev.$env:GITHUB_RUN_NUMBER"
+          }
+          "version=$v" >> $env:GITHUB_OUTPUT
+          Write-Host "Version: $v"
+
+      - name: Build installer
+        shell: pwsh
+        run: ./packaging/build.ps1 -Version '${{ steps.ver.outputs.version }}'
+
+      - name: Build an older installer for the upgrade test
+        shell: pwsh
+        run: |
+          Copy-Item out/Inkgrid-Setup.exe out/Inkgrid-Setup-current.exe
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          & $iscc /Qp /DAppVersion=0.0.1 /DFileVersion=0.0.1.0 "/DStageDir=$PWD\packaging\stage" packaging\inkgrid.iss
+          if ($LASTEXITCODE) { throw "ISCC failed" }
+          Move-Item out/Inkgrid-Setup.exe out/Inkgrid-Setup-old.exe
+          Move-Item out/Inkgrid-Setup-current.exe out/Inkgrid-Setup.exe
+
+      - name: Smoke test (silent install, launch, upgrade, uninstall)
+        shell: pwsh
+        run: ./packaging/smoke.ps1 -Setup out/Inkgrid-Setup.exe -OldSetup out/Inkgrid-Setup-old.exe -Version '${{ steps.ver.outputs.version }}'
+
+      - name: Checksums
+        shell: pwsh
+        run: |
+          $h = (Get-FileHash out/Inkgrid-Setup.exe -Algorithm SHA256).Hash.ToLower()
+          "$h  Inkgrid-Setup.exe" | Out-File -Encoding ascii out/SHA256SUMS.txt
+          Get-Content out/SHA256SUMS.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Inkgrid-Setup
+          path: |
+            out/Inkgrid-Setup.exe
+            out/SHA256SUMS.txt
+            out-node-version.txt
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: smoke-logs
+          path: smoke-logs/
+          if-no-files-found: ignore
+
+  release:
+    # Either a pushed v* tag, or a manual run on main with "release" ticked (creates the tag itself)
+    if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.release && github.ref == 'refs/heads/main')
+    needs: [test, installer]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { name: Inkgrid-Setup, path: dist }
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: v${{ needs.installer.outputs.version }}
+        run: |
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release $TAG already exists. Bump the version in package.json first."; exit 1
+          fi
+          NODE=$(cut -d= -f2 dist/out-node-version.txt)
+          cat > notes.md <<EOF
+          ## Install
+
+          1. Download **Inkgrid-Setup.exe** below and run it. No admin rights needed; it installs just for you.
+          2. If Windows shows **"Windows protected your PC"** (the installer is not code-signed): click **More info**, then **Run anyway**.
+          3. Pick the parts you want, then finish the wizard with **Start Inkgrid** ticked.
+
+          Running a newer Inkgrid-Setup.exe later upgrades in place and keeps your settings.
+
+          **Optional:** "Home-network server" lets you open Inkgrid from your phone or another PC. It bundles Node.js ($NODE).
+
+          **Needs:** Windows 10 1809+ or Windows 11, 64-bit. Microsoft Edge (preinstalled on Windows) for the app window; without it Inkgrid opens in your default browser.
+
+          SHA-256: \`$(cut -d' ' -f1 dist/SHA256SUMS.txt)\`
+          EOF
+          gh release create "$TAG" dist/Inkgrid-Setup.exe dist/SHA256SUMS.txt \
+            --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "Inkgrid ${TAG#v}" --notes-file notes.md
