@@ -1,3 +1,4 @@
+import './styles.css';
 import { Renderer, type Source } from './engine';
 import {
   DEFAULTS, PRESETS, SECTIONS, STYLES, applyPreset, load, save,
@@ -481,6 +482,7 @@ function frame() {
   out.style.width = `${res.width / dpr}px`;
   out.style.height = `${res.height / dpr}px`;
   $('info').textContent = `${sourceName} · ${source.w}×${source.h} → ${res.cols}×${res.rows} cells`;
+  document.documentElement.dataset.ready = '1'; // checked by the installer smoke test
   if (video) {
     $<HTMLInputElement>('seek').value = String(video.duration ? (video.currentTime / video.duration) * 1000 : 0);
     $('time').textContent = fmtTime(video.currentTime);
@@ -576,7 +578,7 @@ buildPresets();
 refreshControls();
 document.fonts?.load('16px "JetBrains Mono"').finally(() => {
   loadSample();
-  requestAnimationFrame(frame);
+  frame(); // first render synchronously, then the rAF loop takes over
 });
 // expose for tests
 (window as unknown as { __app: object }).__app = { get settings() { return settings; }, get source() { return source; } };

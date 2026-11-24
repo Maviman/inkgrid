@@ -9,7 +9,8 @@ import path from 'node:path';
 import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 
-const DIST = path.join(path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..'), 'dist');
+// APP_DIR lets the installed layout point at {app}\app instead of ../dist
+const DIST = path.resolve(process.env.APP_DIR || path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'dist'));
 const HOST = process.env.HOST || '127.0.0.1';
 const PORT = Number(process.env.PORT || 4173);
 
